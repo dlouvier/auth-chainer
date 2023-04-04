@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    k8s-app: oauth2-proxy
+  name: oauth2-proxy
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: oauth2-proxy
+  template:
+    metadata:
+      labels:
+        k8s-app: oauth2-proxy
+    spec:
+      containers:
+      - args:
+        - --provider=github
+        - --email-domain=*
+        - --upstream=file:///dev/null
+        - --http-address=0.0.0.0:4180
+        - --show-debug-on-error
+        #- --whitelist-domain=.localhost.dlou.es
+        - --auth-logging
+        - --request-logging
+        - --standard-logging
+        - --cookie-secure=false
+        - --github-user="dlouvier"
+        # - --github-org="dlouvier"
+        # Register a new application
+        # https://github.com/settings/applications/new
+        env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          value: 4f183807c21fead54215
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          value: cd71f9342fc8352d601ed3a8b58770c37f044d1b
+        # docker run -ti --rm python:3-alpine python -c 'import secrets,base64; print(base64.b64encode(base64.b64encode(secrets.token_bytes(16))));'
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          value: KM_ofO6RUv9VNLnIGl7vTI7ezFs7pkrXQlLpgCjV2FQ=
+        # - name: OAUTH2_PROXY_REDIRECT_URL
+        #   value: "http://my-internal.default.svc.cluster.local/oauth2/callback"
+        # - name: "OAUTH2_PROXY_COOKIE_DOMAINS"
+        #   value: ".cluster.local"
+        image: quay.io/oauth2-proxy/oauth2-proxy:v7.2.0 
+        imagePullPolicy: Always
+        name: oauth2-proxy
+        ports:
+        - containerPort: 4180
+          protocol: TCP
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    k8s-app: oauth2-proxy
+  name: oauth2-proxy
+  namespace: default
+spec:
+  ports:
+  - name: http
+    port: 4180
+    protocol: TCP
+    targetPort: 4180
+  selector:
+    k8s-app: oauth2-proxy

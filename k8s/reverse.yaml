@@ -1,0 +1,33 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: reverse
+  labels:
+    app: reverse
+spec:
+  containers:
+  - image: localhost:5001/reverse:4.7
+    name: reverse
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+    - containerPort: 1338
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: reverse
+  name: reverse
+  namespace: default
+spec:
+  ports:
+  - name: http
+    port: 1338
+    protocol: TCP
+    targetPort: 1338
+  selector:
+    app: reverse

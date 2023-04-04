@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webauthn
+data:
+  # https://github.com/Quiq/webauthn_proxy/blob/02da9df4da0c16115027c58e5951a73fe31abc1b/config/config.yml
+  config.yml: |
+    rpDisplayName: "PlatformConf 2023 - ZTA Demo"
+    rpID: zta-demo.localhost.dlou.es
+    # rpOrigins:
+    #   - https://auth.localhost.dlou.es
+    #   - https://zta-demo.localhost.dlou.es
+  credentials.yml: |
+    cookie_session_secrets:
+      - QtKQZFK4ohGU_aOqfaljAB1OdHH2Un5096OUnLpLXEs
+    user_credentials:
+    #  dlouvier@protonmail.com: eyJJRCI6ODkyNTIxMTcwOTU1MTAwNDM0LCJOYW1lIjoiZGxvdXZpZXJAcHJvdG9ubWFpbC5jb20iLCJEaXNwbGF5TmFtZSI6ImRsb3V2aWVyQHByb3Rvbm1haWwuY29tIiwiQ3JlZGVudGlhbHMiOlt7IklEIjoib2dGWXNEMTh3ejE1SUhxRlBXeHhsUjBKZTFYYnFybDZ5UC9ybklxTC9rQWcyc0daRUlPendYT210eHRmMXVhTW1UOTVjSkdNMWN3SWk3YTd6RWxLY3NkMVIzZ1ZvOVFsc1UwdUlhdXRrcXpVbWsxdmlyU2pQZ2RwTkVTTHBtaFJEVWc3Ni90WDMwdVF0K1c4bG5wZ1dLRUtLWVBIUldYR0x1MjlucjJmT2xXclh0emNQNmxOY0xZb2wrenJtVXY5RmNxcVBoOFM0THZIMXNHWWNzYTJlUGs4dlMwS1hRN1kvQmhjVWwxQXUxUFV2NFFMQWt5QUU4ZlgrOEdpdUNQenI3OD0iLCJQdWJsaWNLZXkiOiJwUUVDQXlZZ0FTRllJUHlXTjR2Q016K2xhZm1QOXovSzJ2bFBpdDJBS1BVWVIyTGt3Sm8xcTdJeUlsZ2dpeTVvbXppN3NBTmVVei9iNHdkekF0NWhXQktadXE3cXdOQlBJaXV0VndNPSIsIkF0dGVzdGF0aW9uVHlwZSI6Im5vbmUiLCJUcmFuc3BvcnQiOm51bGwsIkZsYWdzIjp7IlVzZXJQcmVzZW50Ijp0cnVlLCJVc2VyVmVyaWZpZWQiOmZhbHNlLCJCYWNrdXBFbGlnaWJsZSI6ZmFsc2UsIkJhY2t1cFN0YXRlIjpmYWxzZX0sIkF1dGhlbnRpY2F0b3IiOnsiQUFHVUlEIjoiQUFBQUFBQUFBQUFBQUFBQUFBQUFBQT09IiwiU2lnbkNvdW50IjowLCJDbG9uZVdhcm5pbmciOmZhbHNlLCJBdHRhY2htZW50IjoiIn19XX0=
+
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: webauthn
+  labels:
+    app: webauthn
+spec:
+  containers:
+  - name: webauthn
+    image: quiq/webauthn_proxy:0.0.4
+    resources:
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    ports:
+    - containerPort: 8080
+      protocol: TCP
+    volumeMounts:
+    - name: config
+      mountPath: /opt/config
+  volumes:
+    - name: config
+      configMap:
+        name: webauthn
+  restartPolicy: Never
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: webauthn
+spec:
+  selector:
+    app: webauthn
+  ports:
+  - port: 8080
