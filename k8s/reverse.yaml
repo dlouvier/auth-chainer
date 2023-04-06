@@ -6,7 +6,7 @@ metadata:
     app: reverse
 spec:
   containers:
-  - image: localhost:5001/reverse:4.7
+  - image: localhost:5001/reverse:4.8
     name: reverse
     resources:
       limits:

@@ -59,11 +59,11 @@ func AuthorisationHandle(c echo.Context) error {
 		log.Println("I am in register")
 		if !auth_oauth2_proxy {
 			log.Println("Missing Oauth - redirecting...")
-			return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("https://%s/oauth2/sign_in", c.Request().Host))
+			return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("http://%s/oauth2/sign_in", c.Request().Host))
 		}
 		if !auth_webauthn {
 			log.Println("Missing webauth - redirecting")
-			return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("https://%s/webauthn/login?redirect_url=https://%s&default_username=%s", c.Request().Host, c.Request().Host, auth_user))
+			return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("http://%s/webauthn/login?redirect_url=http://%s&default_username=%s", c.Request().Host, c.Request().Host, auth_user))
 		}
 	}
 

@@ -35,12 +35,12 @@ metadata:
   name: aa-ingress
   annotations:
    nginx.ingress.kubernetes.io/auth-url: "http://reverse.default.svc.cluster.local:1338/auth" # this path domain should be resolveable by the cluster
-   nginx.ingress.kubernetes.io/auth-signin: "https://zta-demo.localhost.dlou.es/register" # this domain should be resolvable by client           
+   nginx.ingress.kubernetes.io/auth-signin: "https://localhost/register" # this domain should be resolvable by client           
 spec:
-  tls:
-    - secretName: zta-demo.localhost.dlou.es
+  # tls:
+  #   - secretName: zta-demo.localhost.dlou.es
   rules:
-  - host: zta-demo.localhost.dlou.es
+  - host: localhost
     http:
       paths:
       - pathType: Prefix
@@ -56,10 +56,11 @@ kind: Ingress
 metadata:
   name: auth-ingress
 spec:
-  tls:
-    - secretName: zta-demo.localhost.dlou.es
+  # tls:
+  #   - secretName: zta-demo.localhost.dlou.es
   rules:
-  - host: zta-demo.localhost.dlou.es
+#  - host: zta-demo.localhost.dlou.es
+  - host: localhost
     http:
       paths:
       - pathType: Prefix
