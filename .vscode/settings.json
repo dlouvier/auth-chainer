@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "kubernetes://schema/apps/v1@deployment": "file:///home/dani/repos/auth-chainer/kustomize/app/echo-server.yaml"
+    }
+}

@@ -1,0 +1,15 @@
+resources:
+- app/echo-server.yaml
+- app/ingress-public.yaml
+- zta/auth-chainer.yaml
+- zta/ingress-private.yaml
+- zta/oauth2-proxy.yaml
+- zta/webauthn.yaml
+configMapGenerator:
+- name: webauthn
+  files:
+    - config.yaml=configs/webauth_config.yml
+    - credentials.yaml=configs/webauth_credentials.yml
+- name: echo-server-script-js
+  files:
+    - echo-server.js=app/echo-server-script.js

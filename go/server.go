@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	OAUTH2_PROXY_HOST = "http://oauth2-proxy.default.svc.cluster.local:4180/oauth2/auth"
-	WEBAUTHN_HOST     = "http://webauthn.default.svc.cluster.local:8080/webauthn/auth"
+	OAUTH2_PROXY_HOST = "http://oauth2-proxy.default.svc.cluster.local/oauth2/auth"
+	WEBAUTHN_HOST     = "http://webauthn.default.svc.cluster.local/webauthn/auth"
 )
 
 func ExternalAuthSucessful(serviceUrl string, request *http.Request) (bool, string) {
@@ -33,8 +33,10 @@ func ExternalAuthSucessful(serviceUrl string, request *http.Request) (bool, stri
 	}
 
 	if (response.StatusCode >= 200) && (response.StatusCode <= 202) {
+		log.Println(response.Header)
+		user := response.Header.Get("X-Auth-Request-User")
 		log.Println("Validation successful")
-		return true, "dlouvier@protonmail.com"
+		return true, user
 	} else if response.StatusCode == 401 {
 		log.Println("User not authorised successful")
 		return false, ""
@@ -97,6 +99,8 @@ func AuthorisationHandle(c echo.Context) error {
 	log.Printf("--- oauth2_proxy: %t  - webauthn: %t", auth_oauth2_proxy, auth_webauthn)
 
 	if auth_oauth2_proxy && auth_webauthn {
+		auth_user, _ := sess.Values["auth_user"].(string)
+		c.Response().Header().Set("X-Auth-Request-User", auth_user)
 		return c.NoContent(http.StatusOK)
 	} else {
 		return c.NoContent(http.StatusUnauthorized)
@@ -116,5 +120,5 @@ func main() {
 	e.GET("/register", AuthorisationHandle)
 
 	// Start server
-	e.Logger.Fatal(e.Start(":1338"))
+	e.Logger.Fatal(e.Start(":8080"))
 }

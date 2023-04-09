@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: auth-chainer
+  name: auth-chainer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-chainer
+  template:
+    metadata:
+      labels:
+        app: auth-chainer
+    spec:
+      containers:
+      - name: container
+        image: localhost:5001/reverse:5.3
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+          name: http
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: auth-chainer
+  name: auth-chainer
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app: auth-chainer
