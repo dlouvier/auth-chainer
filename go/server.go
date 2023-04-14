@@ -5,119 +5,112 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 
-	"github.com/gorilla/sessions"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 )
 
-const (
-	OAUTH2_PROXY_HOST = "http://oauth2-proxy.default.svc.cluster.local/oauth2/auth"
-	WEBAUTHN_HOST     = "http://webauthn.default.svc.cluster.local/webauthn/auth"
-)
+type ExternalAuthServices struct {
+	AuthentificationClient     *http.Client
+	AuthentificationServiceUrl string
+	AuthorisationClient        *http.Client
+	AuthorisationServiceUrl    string
+	UserAuthentificated        bool
+	UserAuthorised             bool
+	UserId                     string
+}
 
-func ExternalAuthSucessful(serviceUrl string, request *http.Request) (bool, string) {
-	log.Printf("Validating requests against: %s", serviceUrl)
-	url, _ := url.Parse(serviceUrl)
-	request.Header.Set("X-Forwarded-Host", request.Header.Get("X-Forwarded-Host"))
+func NewExternalAuthServices() *ExternalAuthServices {
+	return &ExternalAuthServices{
+		AuthentificationClient:     http.DefaultClient,
+		AuthentificationServiceUrl: "https://www.google.es",
+		AuthorisationClient:        http.DefaultClient,
+		AuthorisationServiceUrl:    "https://www.google.es",
+		UserAuthentificated:        false,
+		UserAuthorised:             false,
+	}
+}
+
+func (eas *ExternalAuthServices) CheckAuthentification(request *http.Request) {
+	url, _ := url.Parse(eas.AuthentificationServiceUrl)
 	request.Host = request.Header.Get("X-Forwarded-Host")
 	request.RequestURI = ""
 	request.URL.Host = url.Host
 	request.URL.Path = url.Path
 	request.URL.Scheme = url.Scheme
-
-	response, err := http.DefaultClient.Do(request)
+	response, err := eas.AuthentificationClient.Do(request)
 	if err != nil {
 		log.Printf("client: error making http request: %s\n", err)
 	}
-
 	if (response.StatusCode >= 200) && (response.StatusCode <= 202) {
-		log.Println(response.Header)
-		user := response.Header.Get("X-Auth-Request-User")
-		log.Println("Validation successful")
-		return true, user
-	} else if response.StatusCode == 401 {
-		log.Println("User not authorised successful")
-		return false, ""
-	} else {
-		log.Println("There was an error.")
-		return false, ""
+		eas.UserId = response.Header.Get("X-Auth-Request-User")
+		eas.UserAuthentificated = true
 	}
 }
 
-func AuthorisationHandle(c echo.Context) error {
-	register := strings.Contains(c.Request().URL.RequestURI(), "register") // true
-	log.Println("What is in register")
-	log.Println(register)
-	log.Printf("Yooo what it is hereeee: %s", c.Request().URL.RequestURI())
-	sess, _ := session.Get("session", c)
-	auth_oauth2_proxy, _ := sess.Values["auth_oauth2_proxy"].(bool)
-	auth_user, _ := sess.Values["auth_user"].(string)
-	auth_webauthn, _ := sess.Values["auth_webauthn"].(bool)
-	log.Printf("Current session")
-	log.Println(sess)
-	if register {
-		log.Println("I am in register")
-		if !auth_oauth2_proxy {
-			log.Println("Missing Oauth - redirecting...")
-			return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("http://%s/oauth2/sign_in", c.Request().Host))
-		}
-		if !auth_webauthn {
-			log.Println("Missing webauth - redirecting")
-			return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("http://%s/webauthn/login?redirect_url=http://%s&default_username=%s", c.Request().Host, c.Request().Host, auth_user))
-		}
+func (eas *ExternalAuthServices) CheckAuthorisation(request *http.Request) {
+	url, _ := url.Parse(eas.AuthorisationServiceUrl)
+	request.Host = request.Header.Get("X-Forwarded-Host")
+	request.RequestURI = ""
+	request.URL.Host = url.Host
+	request.URL.Path = url.Path
+	request.URL.Scheme = url.Scheme
+	response, err := eas.AuthentificationClient.Do(request)
+	if err != nil {
+		log.Printf("client: error making http request: %s\n", err)
 	}
-
-	if !auth_oauth2_proxy {
-		success, user := ExternalAuthSucessful(OAUTH2_PROXY_HOST, c.Request())
-		if success {
-			log.Println("Sucessfully found the user and setting cookie for ouath2")
-			sess.Values["auth_oauth2_proxy"] = true
-			sess.Values["auth_user"] = user
-			sess.Save(c.Request(), c.Response())
-			auth_webauthn = true
-		} else {
-			log.Println("Setting oauth_proxy not possible, continue")
-		}
+	if (response.StatusCode >= 200) && (response.StatusCode <= 202) {
+		eas.UserAuthorised = true
 	}
+}
 
-	if !auth_webauthn {
-		success, _ := ExternalAuthSucessful(WEBAUTHN_HOST, c.Request())
-		if success {
-			log.Println("Sucessfully found the user and setting cookie for webauthn")
-			sess.Values["auth_webauthn"] = true
-			sess.Save(c.Request(), c.Response())
-			auth_webauthn = true
-		} else {
-			log.Println("Setting webauthn not possible, continue")
-		}
+func (eas *ExternalAuthServices) AuthHandler(c echo.Context) error {
+	eas.CheckAuthentification(c.Request())
+	eas.CheckAuthorisation(c.Request())
 
-	}
-
-	log.Println("telllll me alll")
-	log.Printf("--- oauth2_proxy: %t  - webauthn: %t", auth_oauth2_proxy, auth_webauthn)
-
-	if auth_oauth2_proxy && auth_webauthn {
-		auth_user, _ := sess.Values["auth_user"].(string)
-		c.Response().Header().Set("X-Auth-Request-User", auth_user)
-		return c.NoContent(http.StatusOK)
+	if eas.UserAuthentificated && eas.UserAuthorised {
+		return c.String(http.StatusAccepted, fmt.Sprintf("Hello, %s", eas.UserId))
 	} else {
-		return c.NoContent(http.StatusUnauthorized)
+		return c.String(http.StatusUnauthorized, "Unable to auth")
+	}
+}
+
+func (eas *ExternalAuthServices) RegisterHandler(c echo.Context) error {
+	eas.CheckAuthentification(c.Request())
+	eas.CheckAuthorisation(c.Request())
+
+	log.Println("DANIIIIIIIIIIIIIIIII")
+	log.Println(c.Request())
+
+	if !eas.UserAuthentificated {
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("http://%s/oauth2/sign_in", c.Request().Host))
+	}
+
+	if !eas.UserAuthorised {
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf(
+			"http://%s/webauthn/login?redirect_url=http://%s&default_username=%s",
+			c.Request().Host,
+			c.Request().Host,
+			eas.UserId))
+	}
+
+	if eas.UserAuthentificated && eas.UserAuthorised {
+		return c.String(http.StatusAccepted, "ALL DONE HERE")
+	} else {
+		return c.String(http.StatusUnauthorized, "Unable to auth")
 	}
 }
 
 func main() {
 	e := echo.New()
 
+	eas := NewExternalAuthServices()
+
 	// Debug mode
 	e.Debug = true
 
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte("secret"))))
+	e.GET("/auth", eas.AuthHandler)
 
-	e.GET("/auth", AuthorisationHandle)
-
-	e.GET("/register", AuthorisationHandle)
+	e.GET("/register", eas.RegisterHandler)
 
 	// Start server
 	e.Logger.Fatal(e.Start(":8080"))
