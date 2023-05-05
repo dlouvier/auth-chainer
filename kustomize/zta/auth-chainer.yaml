@@ -16,7 +16,12 @@ spec:
     spec:
       containers:
       - name: container
-        image: localhost:5001/reverse:5.6
+        image: dlouvier/auth-chainer:0.1
+        env:
+          - name: AUTHENTIFICATION_SERVICE_HOST
+            value: "oauth2-proxy"
+          - name: AUTHORISATION_SERVICE_HOST
+            value: "webauthn"
         ports:
         - containerPort: 8080
           protocol: TCP

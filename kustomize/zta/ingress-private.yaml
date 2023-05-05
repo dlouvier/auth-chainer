@@ -2,21 +2,15 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: private
-  # Only identity validation - Identity Aware Proxy
   annotations:
-    # nginx.ingress.kubernetes.io/auth-url: "http://oauth2-proxy.default.svc.cluster.local/oauth2/auth" # this path domain should be resolveable by the cluster
-    # nginx.ingress.kubernetes.io/auth-signin: "/oauth2/sign_in" # this domain should be resolvable by client           
-    # nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User"
-  # Identity + Device Authorisation - Context Aware Proxy
-  # # annotations:
     nginx.ingress.kubernetes.io/auth-url: "http://auth-chainer.default.svc.cluster.local/auth" # this path domain should be resolveable by the cluster
     nginx.ingress.kubernetes.io/auth-signin: "/register" # this domain should be resolvable by client           
     nginx.ingress.kubernetes.io/auth-response-headers: "X-Auth-Request-User"
 spec:
   tls:
-  - secretName: wildcard-localhost-dlou-es
+  - secretName: site-certificates
   rules:
-  - host: private.localhost.dlou.es
+  - host: private-7f000001.nip.io
     http:
       paths:
       - pathType: Prefix
@@ -30,15 +24,15 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: auth-page
+  name: auth-sites
   # This ingress doesn't have any auth annotation,
   # because otherwise we won't be able to log the user.
   # note: the '/' path of the app is declared in private ingress.
 spec:
   tls:
-  - secretName: wildcard-localhost-dlou-es
+  - secretName: site-certificates
   rules:
-  - host: private.localhost.dlou.es
+  - host: private-7f000001.nip.io
     http:
       paths:
       - pathType: Prefix

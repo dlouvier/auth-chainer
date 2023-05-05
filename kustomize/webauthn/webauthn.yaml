@@ -30,8 +30,8 @@ spec:
           mountPath: /opt/config
       volumes:
         - name: config
-          configMap:
-            name: webauthn
+          secret:
+            secretName: webauthn
 ---
 apiVersion: v1
 kind: Service

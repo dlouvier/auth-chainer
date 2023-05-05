@@ -3,13 +3,23 @@ resources:
 - app/ingress-public.yaml
 - zta/auth-chainer.yaml
 - zta/ingress-private.yaml
-- zta/oauth2-proxy.yaml
-- zta/webauthn.yaml
+- oauth2/oauth2-proxy.yaml
+- webauthn/webauthn.yaml
 configMapGenerator:
-- name: webauthn
-  files:
-    - config.yaml=configs/webauth_config.yml
-    - credentials.yaml=configs/webauth_credentials.yml
 - name: echo-server-script-js
   files:
     - echo-server.js=app/echo-server-script.js
+secretGenerator:
+- name: site-certificates
+  files:
+    - tls.crt=certificates/site-certificates.crt
+    - tls.key=certificates/site-certificates.key
+- name: webauthn
+  files:
+    - config.yaml=webauthn/webauth.config.yaml
+    - credentials.yaml=webauthn/webauth.credentials.yaml
+- name: oauth2-proxy
+  files:
+    - client_id=oauth2/client_id.secret
+    - client_secret=oauth2/client_secret.secret
+    - cookie_secret=oauth2/cookie_secret.secret

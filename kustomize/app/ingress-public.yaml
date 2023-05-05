@@ -4,9 +4,9 @@ metadata:
   name: public
 spec:
   tls:
-  - secretName: wildcard-localhost-dlou-es
+  - secretName: site-certificates
   rules:
-  - host: public.localhost.dlou.es
+  - host: public-7f000001.nip.io
     http:
       paths:
       - pathType: Prefix
